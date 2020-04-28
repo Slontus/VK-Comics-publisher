@@ -14,8 +14,8 @@ To run most [vk](https://vk.com) API methods you need to pass
 **access_token** - a special access key. The most easiest
 way to obtain it is to use Implicit Flow method
 1. Create a group in [vk](https://vk.com).
-2. Create new application in [My Apps]
-(https://vk.com/apps?act=manage) page for developers.
+2. Create new application in [My Apps](https://vk.com/apps?act=manage) 
+page for developers.
 3. Application type should be *standalone*.
 4. In your app settings please copy **App ID**, create
 **.env** file and save there your App ID as 
