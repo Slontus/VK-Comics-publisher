@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import random
 import logging
 
-logging.basicConfig(format="[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s] %(message)s",
-                    level=logging.DEBUG, filename='log.log')
 DIRECTORY = 'files'
 URL_LAST_COMICS = "http://xkcd.com/info.0.json"
 URl_COMICS = ["http://xkcd.com/", "/info.0.json"]
@@ -87,6 +85,8 @@ def upload_photo_on_wall(url, filename):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format="[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s] %(message)s",
+                        level=logging.DEBUG, filename='log.log')
     try:
         last_comics = get_response(URL_LAST_COMICS)['num']
         comics_id = random.randint(1, last_comics)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
         upload_url = group_wall['response']['upload_url']
         comics_file_path = os.path.join(DIRECTORY, comics_filename)
-        photo_uploaded = upload_photo_on_wall(upload_url, comics_file_path + "898")
+        photo_uploaded = upload_photo_on_wall(upload_url, comics_file_path)
 
         payload_saving = {
             "photo": photo_uploaded['photo'],
@@ -120,6 +120,7 @@ if __name__ == "__main__":
         payload_wall_posting = {"attachments": attachment, "message": comics_message}
         payload_wall_posting.update(payload_wall)
         post_to_vk(create_url(METHOD_POSTWALL), payload_wall_posting)
+        logging.info("Image successfully posted on the wall")
     except ValueError as error:
         logging.error(error)
     finally:
