@@ -47,7 +47,7 @@ def get_response(url, payload=None):
             response = requests.get(url)
             response.raise_for_status()
     except requests.exceptions.HTTPError as error:
-        logging.error(f"Not possible to get response: {error}")
+        raise ValueError(f"Program had to stop. Not possible to get response from {url}: {error}")
     else:
         return response.json()
 
@@ -60,7 +60,7 @@ def post_to_vk(url, payload):
         if 'error' in confirmation:
             raise requests.exceptions.HTTPError(confirmation['error'])
     except requests.exceptions.HTTPError as error:
-        logging.error(f"Not possible to post data: {error}")
+        raise ValueError(f"Program had to stop. Not possible to post data to {url}: {error}")
     else:
         return confirmation
 
@@ -79,9 +79,9 @@ def upload_photo_on_wall(url, filename):
             response = requests.post(url, files=_files)
             response.raise_for_status()
     except requests.exceptions.InvalidSchema as error:
-        logging.error(f"Not possible to upload file {filename} on wall: {error}")
+        raise ValueError(f"Program had to stop. Not possible to upload file {filename} on wall: {error}")
     except FileNotFoundError:
-        logging.error(f"File {filename} does not exist")
+        raise ValueError(f"Program had to stop. Not possible to upload file {filename} on wall as it does not exists")
     else:
         return response.json()
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
         upload_url = group_wall['response']['upload_url']
         comics_file_path = os.path.join(DIRECTORY, comics_filename)
-        photo_uploaded = upload_photo_on_wall(upload_url, comics_file_path)
+        photo_uploaded = upload_photo_on_wall(upload_url, comics_file_path + "898")
 
         payload_saving = {
             "photo": photo_uploaded['photo'],
@@ -120,6 +120,8 @@ if __name__ == "__main__":
         payload_wall_posting = {"attachments": attachment, "message": comics_message}
         payload_wall_posting.update(payload_wall)
         post_to_vk(create_url(METHOD_POSTWALL), payload_wall_posting)
+    except ValueError as error:
+        logging.error(error)
     finally:
         files = os.listdir(DIRECTORY)
         for file in files:
