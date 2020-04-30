@@ -18,12 +18,12 @@ def create_directory():
     os.makedirs(DIRECTORY, exist_ok=True)
 
 
-def image_download(url, filename):
+def download_image(url, filename):
     file_path = os.path.join(DIRECTORY, filename)
     try:
         response = requests.get(url)
-    except requests.exceptions.HTTPError as error:
-        logging.error(f"Not possible to download image: {error}")
+    except requests.exceptions.HTTPError as _error:
+        logging.error(f"Not possible to download image: {_error}")
     else:
         with open(file_path, 'wb') as _file:
             _file.write(response.content)
@@ -33,41 +33,40 @@ def create_url(method):
     return "".join([VK_API, method])
 
 
+def check_error(received_response):
+    if 'error' in received_response:
+        raise requests.exceptions.HTTPError(received_response['error'])
+
+
 def get_response(url, payload=None):
     try:
-        if payload:
-            response = requests.get(url, params=payload)
-            response.raise_for_status()
-            confirmation = response.json()
-            if 'error' in confirmation:
-                raise requests.exceptions.HTTPError(confirmation['error'])
-        else:
-            response = requests.get(url)
-            response.raise_for_status()
-    except requests.exceptions.HTTPError as error:
-        raise ValueError(f"Program had to stop. Not possible to get response from {url}: {error}")
+        response = requests.get(url, params=payload)
+        response.raise_for_status()
+        response = response.json()
+        check_error(response)
+    except requests.exceptions.HTTPError as _error:
+        raise requests.exceptions.HTTPError(f"Program had to stop. Not possible to get response from {url}: {_error}")
     else:
-        return response.json()
+        return response
 
 
 def post_to_vk(url, payload):
     try:
         response = requests.post(url, params=payload)
         response.raise_for_status()
-        confirmation = response.json()
-        if 'error' in confirmation:
-            raise requests.exceptions.HTTPError(confirmation['error'])
-    except requests.exceptions.HTTPError as error:
-        raise ValueError(f"Program had to stop. Not possible to post data to {url}: {error}")
+        comics_post_response = response.json()
+        check_error(comics_post_response)
+    except requests.exceptions.HTTPError as _error:
+        raise requests.exceptions.HTTPError(f"Program had to stop. Not possible to post data to {url}: {_error}")
     else:
-        return confirmation
+        return comics_post_response
 
 
 def download_comics(_comics):
     create_directory()
     comics_title = _comics['safe_title'].replace(' ', '_').lower()
     filename = "".join([comics_title, os.path.splitext(_comics['img'])[1]])
-    image_download(_comics['img'], filename)
+    download_image(_comics['img'], filename)
 
 
 def upload_photo_on_wall(url, filename):
@@ -76,10 +75,12 @@ def upload_photo_on_wall(url, filename):
             _files = {'photo': _file}
             response = requests.post(url, files=_files)
             response.raise_for_status()
-    except requests.exceptions.InvalidSchema as error:
-        raise ValueError(f"Program had to stop. Not possible to upload file {filename} on wall: {error}")
+    except requests.exceptions.InvalidSchema as _error:
+        raise requests.exceptions.InvalidSchema(f"Program had to stop. Not possible "
+                                                f"to upload file {filename} on wall: {_error}")
     except FileNotFoundError:
-        raise ValueError(f"Program had to stop. Not possible to upload file {filename} on wall as it does not exists")
+        raise FileNotFoundError(f"Program had to stop. Not possible to upload "
+                                f"file {filename} on wall as it does not exists")
     else:
         return response.json()
 
@@ -121,7 +122,11 @@ if __name__ == "__main__":
         payload_wall_posting.update(payload_wall)
         post_to_vk(create_url(METHOD_POSTWALL), payload_wall_posting)
         logging.info("Image successfully posted on the wall")
-    except ValueError as error:
+    except requests.exceptions.HTTPError as error:
+        logging.error(error)
+    except requests.exceptions.InvalidSchema as error:
+        logging.error(error)
+    except FileNotFoundError as error:
         logging.error(error)
     finally:
         files = os.listdir(DIRECTORY)
